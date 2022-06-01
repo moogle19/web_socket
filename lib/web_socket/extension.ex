@@ -3,15 +3,15 @@ defmodule WebSocket.Extension do
   Tools for defining extensions to the WebSocket protocol
 
   The WebSocket protocol allows for extensions which act as middle-ware
-  in the encoding and decoding of frames. In `Mint.WebSocket`, extensions are
-  written as module which implement the `Mint.WebSocket.Extension` behaviour.
+  in the encoding and decoding of frames. In `WebSocket`, extensions are
+  written as module which implement the `WebSocket.Extension` behaviour.
 
-  The common "permessage-deflate" extension is built-in to `Mint.WebSocket` as
-  `Mint.WebSocket.PerMessageDeflate`. This extension should be used as a
+  The common "permessage-deflate" extension is built-in to `WebSocket` as
+  `WebSocket.PerMessageDeflate`. This extension should be used as a
   reference when writing future extensions, but future extensions should be
-  written as separate libraries which extend `Mint.WebSocket` instead of
+  written as separate libraries which extend `WebSocket` instead of
   built-in. Also note that extensions must operate on the internal
-  representations of frames using the records defined in `Mint.WebSocket.Frame`,
+  representations of frames using the records defined in `WebSocket.Frame`,
   which are not documented.
   """
 
@@ -37,28 +37,28 @@ defmodule WebSocket.Extension do
   ```
 
   These can be configured by passing parameters to any element passed in the
-  `:extensions` option to `Mint.WebSocket.upgrade/4`.
+  `:extensions` option to `WebSocket.upgrade/4`.
 
   For example, one might write the above parameter configuration as
 
   ```elixir
   [
-    {Mint.WebSocket.PerMessageDeflate,
+    {WebSocket.PerMessageDeflate,
      [client_no_context_takeover: true, client_max_window_bits: 12]}
   ]
   ```
 
-  when passing the `:extensions` option to `Mint.WebSocket.upgrade/4`.
+  when passing the `:extensions` option to `WebSocket.upgrade/4`.
 
-  Note that `Mint.WebSocket.upgrade/4` will normalize the parameters of an
+  Note that `WebSocket.upgrade/4` will normalize the parameters of an
   extension to a list of two-tuples with string keys and values. For example,
   the above would be normalized to this extensions list:
 
   ```elixir
   [
-    %Mint.WebSocket.Extension{
+    %WebSocket.Extension{
       name: "permessage-deflate",
-      module: Mint.WebSocket.PerMessageDeflate,
+      module: WebSocket.PerMessageDeflate,
       params: [
         {"client_no_context_takeover", "true"},
         {"client_max_window_bits", "12"}
@@ -74,14 +74,14 @@ defmodule WebSocket.Extension do
   @typedoc """
   A structure representing an instance of an extension
 
-  Extensions are implemented as modules but passed to `Mint.WebSocket` as
-  `Mint.WebSocket.Extension` structs with the following keys:
+  Extensions are implemented as modules but passed to `WebSocket` as
+  `WebSocket.Extension` structs with the following keys:
 
   * `:name` - the name of the extension. When using the short-hand tuple
-    syntax to pass extensions to `Mint.WebSocket.upgrade/4`, the name is
+    syntax to pass extensions to `WebSocket.upgrade/4`, the name is
     determined by calling the `c:name/0` callback.
   * `:module` - the module which implements the callbacks defined in the
-    `Mint.WebSocket.Extension` behavior.
+    `WebSocket.Extension` behavior.
   * `:state` - an arbitrary piece of data curated by the extension. For
     example, the "permessage-deflate" extension uses this field to
     hold `t:zlib.zstream()`s for compression and decompression.
@@ -110,7 +110,7 @@ defmodule WebSocket.Extension do
 
   ## Examples
 
-      iex> Mint.WebSocket.PerMessageDeflate.name()
+      iex> WebSocket.PerMessageDeflate.name()
       "permessage-deflate"
   """
   @callback name() :: String.t()
@@ -134,14 +134,14 @@ defmodule WebSocket.Extension do
   initialized while any extensions after `this_extension` are not yet
   initialized.
 
-  Error tuples bubble up to `Mint.WebSocket.upgrade/4`.
+  Error tuples bubble up to `WebSocket.upgrade/4`.
   """
   @callback init(this_extension :: t(), all_extensions :: t()) :: {:ok, t()} | {:error, term()}
 
   @doc """
   Invoked when encoding frames before sending them across the wire
 
-  Error tuples bubble up to `Mint.WebSocket.encode/2`.
+  Error tuples bubble up to `WebSocket.encode/2`.
   """
   @callback encode(frame :: Frame.frame(), state :: term()) ::
               {:ok, frame :: Frame.frame(), state :: term()} | {:error, term()}
@@ -149,7 +149,7 @@ defmodule WebSocket.Extension do
   @doc """
   Invoked when decoding frames after receiving them from the wire
 
-  Error tuples bubble up to `Mint.WebSocket.decode/2`.
+  Error tuples bubble up to `WebSocket.decode/2`.
   """
   @callback decode(frame :: Frame.frame(), state :: term()) ::
               {:ok, frame :: Frame.frame(), state :: term()} | {:error, term()}

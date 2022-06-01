@@ -43,17 +43,17 @@ defmodule WebSocket.Frame do
   In order to close a WebSocket connection gracefully, either the client or
   server sends a close frame. Then the other endpoint responds with a
   close with code `1_000` and then closes the TCP connection. This can be
-  accomplished in Mint.WebSocket like so:
+  accomplished in WebSocket like so:
 
   ```elixir
-  {:ok, websocket, data} = Mint.WebSocket.encode(websocket, :close)
-  {:ok, conn} = Mint.WebSocket.stream_request_body(conn, ref, data)
+  {:ok, websocket, data} = WebSocket.encode(websocket, :close)
+  {:ok, conn} = WebSocket.stream_request_body(conn, ref, data)
 
   close_response = receive(do: (message -> message))
-  {:ok, conn, [{:data, ^ref, data}]} = Mint.WebSocket.stream(conn, close_response)
-  {:ok, websocket, [{:close, 1_000, ""}]} = Mint.WebSocket.decode(websocket, data)
+  {:ok, conn, [{:data, ^ref, data}]} = WebSocket.stream(conn, close_response)
+  {:ok, websocket, [{:close, 1_000, ""}]} = WebSocket.decode(websocket, data)
 
-  Mint.HTTP.close(conn)
+  HTTP.close(conn)
   ```
 
   [rfc6455
@@ -224,7 +224,7 @@ defmodule WebSocket.Frame do
   def apply_mask(<<>>, _mask, acc), do: acc
 
   @spec decode([binary()], binary()) ::
-          {:ok, [Extension.t()], [Mint.WebSocket.frame() | {:error, term()}]}
+          {:ok, [Extension.t()], [WebSocket.frame() | {:error, term()}]}
           | {:error, any()}
   def decode(frames, extensions) do
     # {buffer, fragment, frames} =  binary_to_frames(fragment, buffer, data)
@@ -399,8 +399,8 @@ defmodule WebSocket.Frame do
 
   # translate from user-friendly tuple into record defined in this module
   # (and the reverse)
-  @spec translate(Mint.WebSocket.frame() | Mint.WebSocket.shorthand_frame()) :: tuple()
-  @spec translate(tuple) :: Mint.WebSocket.frame()
+  @spec translate(WebSocket.frame() | WebSocket.shorthand_frame()) :: tuple()
+  @spec translate(tuple) :: WebSocket.frame()
   for opcode <- Map.keys(@opcodes) do
     def translate(unquote(opcode)(reserved: <<reserved::bitstring>>))
         when reserved != <<0::size(3)>> do

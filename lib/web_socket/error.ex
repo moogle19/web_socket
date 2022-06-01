@@ -2,7 +2,7 @@ defmodule WebSocket.Error do
   @moduledoc """
   Represents an error in the WebSocket protocol
 
-  The `Mint.WebSocketError` struct is an exception, so it can be raised as
+  The `WebSocket.Error` struct is an exception, so it can be raised as
   any other exception.
   """
 
@@ -10,7 +10,7 @@ defmodule WebSocket.Error do
     quote do
       :extended_connect_disabled
       | :payload_too_large
-      | {:extension_not_negotiated, Mint.WebSocket.Extension.t()}
+      | {:extension_not_negotiated, WebSocket.Extension.t()}
     end
 
   @type t :: %__MODULE__{reason: unquote(reason_type) | term()}

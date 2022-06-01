@@ -28,7 +28,7 @@ defmodule WebSocket.Utils do
     |> Enum.reject(fn {_k, v} -> v == "" end)
   end
 
-  @spec check_accept_nonce(binary() | nil, Mint.Types.headers()) ::
+  @spec check_accept_nonce(binary() | nil, Types.headers()) ::
           :ok | {:error, :invalid_nonce}
   def check_accept_nonce(nil, _response_headers) do
     {:error, :invalid_nonce}
