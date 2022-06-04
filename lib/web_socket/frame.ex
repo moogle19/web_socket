@@ -121,10 +121,10 @@ defmodule WebSocket.Frame do
 
   @spec encode(shorthand_frame() | frame(), [Extension.t()]) ::
           {:ok, binary(), [Extension.t()]} | {:error, any()}
-  def encode(frame, extensions) when is_friendly_frame(frame) do
+  def encode(frame, mask \\ true, extensions \\ []) when is_friendly_frame(frame) do
     {frame, extensions} =
       frame
-      |> translate()
+      |> translate(mask)
       |> Extension.encode(extensions)
 
     frame = encode_to_binary(frame)
@@ -226,10 +226,7 @@ defmodule WebSocket.Frame do
   @spec decode([binary()], binary()) ::
           {:ok, [Extension.t()], [WebSocket.frame() | {:error, term()}]}
           | {:error, any()}
-  def decode(frames, extensions) do
-    # {buffer, fragment, frames} =  binary_to_frames(fragment, buffer, data)
-    # {websocket, frames} = binary_to_frames(websocket, data)
-
+  def decode(frames, extensions \\ []) do
     {extensions, frames} =
       Enum.reduce(frames, {extensions, []}, fn
         {:error, reason}, {extensions, acc} ->
@@ -402,16 +399,45 @@ defmodule WebSocket.Frame do
   @spec translate(WebSocket.frame() | WebSocket.shorthand_frame()) :: tuple()
   @spec translate(tuple) :: WebSocket.frame()
   for opcode <- Map.keys(@opcodes) do
-    def translate(unquote(opcode)(reserved: <<reserved::bitstring>>))
+    def translate(unquote(opcode)(reserved: <<reserved::bitstring>>), _mask?)
         when reserved != <<0::size(3)>> do
       {:error, {:malformed_reserved, reserved}}
     end
   end
 
-  def translate({:error, reason}), do: {:error, reason}
+  def translate({:error, reason}, _mask?), do: {:error, reason}
 
-  def translate({:text, text}) do
-    text(fin?: true, mask: new_mask(), data: text)
+  def translate({:text, text}, mask?) do
+    mask = if mask?, do: new_mask(), else: nil
+    text(fin?: true, mask: mask, data: text)
+  end
+
+  def translate({:binary, binary}, mask?) do
+    mask = if mask?, do: new_mask(), else: nil
+    binary(fin?: true, mask: mask, data: binary)
+  end
+
+  def translate(:ping, mask?), do: translate({:ping, <<>>}, mask?)
+
+  def translate({:ping, body}, mask?) do
+    mask = if mask?, do: new_mask(), else: nil
+    ping(mask: mask, data: body)
+  end
+
+  def translate(:pong, mask?), do: translate({:pong, <<>>}, mask?)
+
+  def translate({:pong, body}, mask?) do
+    mask = if mask?, do: new_mask(), else: nil
+    pong(mask: mask, data: body)
+  end
+
+  def translate(:close, mask?) do
+    translate({:close, nil, nil}, mask?)
+  end
+
+  def translate({:close, code, reason}, mask?) when is_nil(code) or is_valid_close_code(code) do
+    mask = if mask?, do: new_mask(), else: nil
+    close(mask: mask, code: code, reason: reason, data: <<>>)
   end
 
   def translate(text(fin?: true, data: data)) do
@@ -422,35 +448,9 @@ defmodule WebSocket.Frame do
     end
   end
 
-  def translate({:binary, binary}) do
-    binary(fin?: true, mask: new_mask(), data: binary)
-  end
-
   def translate(binary(fin?: true, data: data)), do: {:binary, data}
-
-  def translate(:ping), do: translate({:ping, <<>>})
-
-  def translate({:ping, body}) do
-    ping(mask: new_mask(), data: body)
-  end
-
   def translate(ping(data: data)), do: {:ping, data}
-
-  def translate(:pong), do: translate({:pong, <<>>})
-
-  def translate({:pong, body}) do
-    pong(mask: new_mask(), data: body)
-  end
-
   def translate(pong(data: data)), do: {:pong, data}
-
-  def translate(:close) do
-    translate({:close, nil, nil})
-  end
-
-  def translate({:close, code, reason}) do
-    close(mask: new_mask(), code: code, reason: reason, data: <<>>)
-  end
 
   def translate(close(code: code, reason: reason)) do
     {:close, code, reason}
